@@ -18,3 +18,4 @@ EXTRACTED_FEATURES/
 *.key
 *.safetensors
 *.bin
+logs/
