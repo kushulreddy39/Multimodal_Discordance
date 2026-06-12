@@ -1,50 +1,55 @@
-import os
 import time
 
 import torch
-from transformers import (
-    AutoModelForImageTextToText,
-    AutoProcessor,
-)
+from transformers import AutoModelForImageTextToText, AutoProcessor
 
 
 MODEL_ID = "google/medgemma-1.5-4b-it"
 
-# Optional: hide the Windows symlink warning.
-os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
-
 
 def main() -> None:
-    print("=" * 60)
-    print("Loading MedGemma 1.5 on CPU")
-    print("=" * 60)
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA GPU was not detected.")
 
-    print("Device: CPU")
-    print("Model:", MODEL_ID)
-    print(
-        "\nWarning: The first run downloads several GB, "
-        "and CPU loading may take a long time."
+    device_name = torch.cuda.get_device_name(0)
+    total_memory_gb = (
+        torch.cuda.get_device_properties(0).total_memory / 1024**3
     )
 
+    print("=" * 60)
+    print("Loading MedGemma 1.5 on GPU")
+    print("=" * 60)
+    print("Model:", MODEL_ID)
+    print("GPU:", device_name)
+    print("GPU memory:", f"{total_memory_gb:.2f} GB")
+    print("BF16 supported:", torch.cuda.is_bf16_supported())
+
     start_time = time.time()
+
+    print("\nLoading processor...")
 
     processor = AutoProcessor.from_pretrained(
         MODEL_ID
     )
 
-    print("\nProcessor loaded.")
-    print("Downloading/loading model weights...")
+    print("Processor loaded.")
+    print("\nDownloading/loading model weights...")
 
     model = AutoModelForImageTextToText.from_pretrained(
         MODEL_ID,
 
-        # Float32 is the safest CPU option.
-        dtype=torch.float32,
+        # Approximately half the memory of float32.
+        dtype=torch.bfloat16,
 
-        # Force the complete model onto CPU.
-        device_map={"": "cpu"},
+        # Place as much of the model as possible on the GPU.
+        device_map="auto",
 
-        # Avoid creating two complete copies in memory.
+        # Leave some GPU memory available for inference.
+        max_memory={
+            0: "14GiB",
+            "cpu": "32GiB",
+        },
+
         low_cpu_mem_usage=True,
     )
 
@@ -59,17 +64,28 @@ def main() -> None:
         for parameter in model.parameters()
     )
 
+    allocated_gb = (
+        torch.cuda.memory_allocated(0) / 1024**3
+    )
+
+    reserved_gb = (
+        torch.cuda.memory_reserved(0) / 1024**3
+    )
+
     print("\n" + "=" * 60)
     print("MEDGEMMA LOADED SUCCESSFULLY")
     print("=" * 60)
     print("Processor:", type(processor).__name__)
     print("Model:", type(model).__name__)
-    print("Device:", next(model.parameters()).device)
     print("Parameters:", f"{parameter_count:,}")
-    print(
-        "Loading time:",
-        f"{elapsed_minutes:.2f} minutes"
-    )
+    print("Loading time:", f"{elapsed_minutes:.2f} minutes")
+    print("GPU memory allocated:", f"{allocated_gb:.2f} GB")
+    print("GPU memory reserved:", f"{reserved_gb:.2f} GB")
+
+    if hasattr(model, "hf_device_map"):
+        print("Device map:", model.hf_device_map)
+    else:
+        print("Primary device:", next(model.parameters()).device)
 
 
 if __name__ == "__main__":
