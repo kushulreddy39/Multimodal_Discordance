@@ -50,6 +50,7 @@ Completed:
 - [x] One-patient multimodal extraction completed
 - [x] Ten-record batch extraction completed
 - [x] Full-dataset extraction launched with checkpointing and restart support
+- [x] Initial AP-only demographic analysis completed
 
 Ten-record validation results:
 
@@ -64,6 +65,20 @@ All ten records completed successfully with no failed records.
 
 ---
 
+## Initial AP-Only Demographic Analysis
+
+An initial demographic analysis was performed using AP chest X-rays only to reduce view-position confounding. The analysis covers:
+
+- Recorded Black and White patients
+- Patients below 65 and patients 65 years or older
+- Female and male patients
+- Race × age × sex intersectional groups
+- Record-level and unique-patient counts
+
+Detailed cohort definitions, aggregate counts, and interpretation are available in the [Initial Demographic Analysis Report](results/fairness/initial_demographic_analysis/initial_demographic_report.md).
+
+---
+
 ## Repository Structure
 
 ```text
@@ -75,7 +90,13 @@ Multimodal_Discordance/
 ├── outputs/
 │   ├── one_patient_test/
 │   └── all_embeddings/
+├── results/
+│   └── fairness/
+│       └── initial_demographic_analysis/
+│           └── initial_demographic_report.md
 ├── src/
+│   ├── fairness/
+│   │   └── initial_demographic_analysis.py
 │   ├── inspect_one_ecg.py
 │   ├── test_ecg_model.py
 │   ├── test_medgemma_access.py
@@ -511,6 +532,7 @@ The next research stages are:
 6. Measure modality bias
 7. Test selective modality shifting
 8. Compare patient-level and time-point-level discordance
+9. Compare modality reliance across recorded race, age, and administrative-sex groups
 
 Potential discordance examples:
 
