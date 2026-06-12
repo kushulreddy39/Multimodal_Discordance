@@ -1,4 +1,4 @@
-# Multimodal Discordance Detection
+# Multimodal Discordance
 
 This repository contains a research pipeline for extracting and comparing representations from three clinical modalities:
 
